@@ -1,26 +1,54 @@
 import React, { Component } from 'react';
-import Searchbar from './Searchbar/Searchbar';
 import styles from './App.module.scss';
+import * as api from 'services/fetchImagesWithQuery';
+import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
-import fetchImagesWithQuery from 'services/fetchImagesWithQuery';
 
 export class App extends Component {
   state = {
     images: [],
     searchQuery: '',
     page: 1,
+    isLoading: false,
+    error: '',
   }
 
-  setParams = (searchValue, pageNumber) => {
-    this.setState({searchQuery: searchValue});
-    this.setState({page: pageNumber});
+  setInitialParams = (searchQuery) => {
+    if (searchQuery === '') {
+      return alert('Enter the search value!')
+    }
+
+    if (searchQuery === this.state.searchQuery) {
+      return;
+    }
+
+    this.setState({
+      images: [],
+      searchQuery,
+      page: 1,
+    });
   }
 
-  componentDidUpdate = async () => {
-    const {searchQuery, page} = this.state;
-    const response = await fetchImagesWithQuery(searchQuery, page);
-    const {hits} = response;
-    this.setState({images: hits})
+  addImages = async (searchQuery, page) => {
+    try {
+      this.setState({ isLoading: true });
+      const newImages = await api.fetchImagesWithQuery(searchQuery, page);
+
+      this.setState(oldState => ({
+        images: [...oldState.images, ...newImages],
+      }));
+    } catch (error) {
+      this.setState({error: error.message})
+    } finally {
+      this.setState({ isLoading: false });
+    }
+  }
+
+  componentDidUpdate(_, prevState) {
+    if (prevState.page !== this.state.page || prevState.searchQuery !== this.state.searchQuery) {
+      const {searchQuery, page} = this.state;
+      this.addImages(searchQuery, page);
+    }
   }
 
   render() {
@@ -29,8 +57,8 @@ export class App extends Component {
 
     return (
       <div className={app}>
-        <Searchbar setParams={this.setParams}/>
-        {images.length > 0 && <ImageGallery items={images}/>}
+        <Searchbar onSubmit={this.setInitialParams}/>
+        {images.length > 0 && <ImageGallery items={images} />} 
       </div>
     );
   }
