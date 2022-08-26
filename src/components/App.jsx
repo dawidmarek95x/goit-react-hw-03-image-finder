@@ -3,6 +3,8 @@ import styles from './App.module.scss';
 import * as api from 'services/fetchImagesWithQuery';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
+import { Button } from './Button/Button';
+import { Loader } from './Loader/Loader';
 
 export class App extends Component {
   state = {
@@ -10,7 +12,8 @@ export class App extends Component {
     searchQuery: '',
     page: 1,
     isLoading: false,
-    error: '',
+    error: null,
+    foundImages: null,
   }
 
   setInitialParams = (searchQuery) => {
@@ -29,16 +32,26 @@ export class App extends Component {
     });
   }
 
+  loadMore = () => {
+    this.setState(({page}) => ({page: page + 1}));
+  }
+
   addImages = async (searchQuery, page) => {
+    this.setState({ isLoading: true });
+
     try {
-      this.setState({ isLoading: true });
-      const newImages = await api.fetchImagesWithQuery(searchQuery, page);
+      const data = await api.fetchImagesWithQuery(searchQuery, page);
+      const {hits: newImages, totalHits: foundImages} = data;
 
       this.setState(oldState => ({
         images: [...oldState.images, ...newImages],
       }));
+
+      if (foundImages !== this.state.foundImages) {
+        this.setState({ foundImages });
+      }
     } catch (error) {
-      this.setState({error: error.message})
+      this.setState({ error })
     } finally {
       this.setState({ isLoading: false });
     }
@@ -53,12 +66,15 @@ export class App extends Component {
 
   render() {
     const {app} = styles;
-    const {images} = this.state;
+    const {images, isLoading, error, foundImages} = this.state;
 
     return (
       <div className={app}>
         <Searchbar onSubmit={this.setInitialParams}/>
-        {images.length > 0 && <ImageGallery items={images} />} 
+        {error && <p>Whoops, something went wrong: {error.message}</p>}
+        {isLoading && <Loader />}
+        {images.length > 0 && <ImageGallery items={images} />}
+        {images.length < foundImages && <Button loadMore={this.loadMore} />}
       </div>
     );
   }
