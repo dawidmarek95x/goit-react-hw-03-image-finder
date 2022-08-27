@@ -5,6 +5,7 @@ import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Button } from './Button/Button';
 import { Loader } from './Loader/Loader';
+import { Modal } from './Modal/Modal';
 
 export class App extends Component {
   state = {
@@ -14,6 +15,7 @@ export class App extends Component {
     isLoading: false,
     error: null,
     foundImages: null,
+    currentLargeImg: null,
   }
 
   setInitialParams = (searchQuery) => {
@@ -57,6 +59,19 @@ export class App extends Component {
     }
   }
 
+  openModal = (srcLargeImg, altInfo) => {
+    this.setState({
+      currentLargeImg: {
+        src: srcLargeImg,
+        alt: altInfo,
+      }
+    });
+  }
+
+  closeModal = (evt) => {
+    this.setState({currentLargeImg: null});
+  }
+
   componentDidUpdate(_, prevState) {
     if (prevState.page !== this.state.page || prevState.searchQuery !== this.state.searchQuery) {
       const {searchQuery, page} = this.state;
@@ -66,15 +81,25 @@ export class App extends Component {
 
   render() {
     const {app} = styles;
-    const {images, isLoading, error, foundImages} = this.state;
+    const {images, isLoading, error, foundImages, currentLargeImg} = this.state;
 
     return (
       <div className={app}>
         <Searchbar onSubmit={this.setInitialParams}/>
         {error && <p>Whoops, something went wrong: {error.message}</p>}
         {isLoading && <Loader />}
-        {images.length > 0 && <ImageGallery items={images} />}
-        {images.length < foundImages && <Button loadMore={this.loadMore} />}
+        {images.length > 0 && 
+          <>
+            <ImageGallery 
+              items={images} 
+              openModal={this.openModal} 
+            />
+            {images.length < foundImages && 
+              <Button loadMore={this.loadMore} />
+            }
+          </>
+        }
+        {currentLargeImg && <Modal closeModal={this.closeModal} imgData={currentLargeImg}/>}
       </div>
     );
   }
