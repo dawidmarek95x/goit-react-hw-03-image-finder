@@ -59,13 +59,8 @@ export class App extends Component {
     }
   }
 
-  openModal = (srcLargeImg, altInfo) => {
-    this.setState({
-      currentLargeImg: {
-        src: srcLargeImg,
-        alt: altInfo,
-      }
-    });
+  openModal = (src, alt) => {
+    this.setState(state => ({...state, currentLargeImg: {src, alt}}));
   }
 
   closeModal = (evt) => {
